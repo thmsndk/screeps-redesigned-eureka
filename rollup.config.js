@@ -21,13 +21,13 @@ const loadSS3Config = async () => {
     throw new Error("Invalid upload destination");
   }
 
-  console.log("SS3 config found", server);
+  // console.log("SS3 config found", server);
 
   return {
     token: server.token,
     protocol: server.secure ? "https" : "http",
     hostname: server.host,
-    port: server.port || server.secure ? 443 : 21025,
+    port: server.port || (server.secure ? 443 : 21025),
     path: server.ptr ? "/ptr" : "/",
     branch: server.sim ? "sim" : "auto",
     email: server.username,
