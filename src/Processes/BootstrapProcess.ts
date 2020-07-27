@@ -37,7 +37,7 @@ function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
   }
 }
 const AVERAGE_FILL_TIME = 50;
-const offsetSpawnRequest = (offset: number) => offset + CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME;
+const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
 function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGeneratorResult {
   context.info(`Bootstrapping initialized for ${roomName}`);
   while (true) {
@@ -57,13 +57,13 @@ function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGener
 
       // objective, mine source untill death
       kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, spawns, "harvest");
-      offset += offsetSpawnRequest(offset);
+      offset += offsetSpawnRequest();
       context.info(`Sleeping for ${offset}`);
       yield* sleep(offset);
 
       // objective, haul untill death, primarly from source
       kernel.registerProcess(key(`${source.id}:haul`), spawnCreep, source.id, spawns, "haul");
-      offset += offsetSpawnRequest(offset);
+      offset += offsetSpawnRequest();
       context.info(`Sleeping for ${offset}`);
       yield* sleep(offset);
     }
