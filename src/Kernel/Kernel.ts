@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { LogLevel, Logger } from "./Logger";
+import { LogLevel, Logger } from "../Logger";
 
 const log = new Logger("[Kernel]");
 

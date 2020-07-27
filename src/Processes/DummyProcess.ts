@@ -1,4 +1,4 @@
-import { ProcessContext, kernel } from "./Kernel";
+import { ProcessContext, kernel } from "../Kernel/Kernel";
 
 // TODO: restartthread on register?
 kernel.registerProcess("DummyProcess", dummyProcess);

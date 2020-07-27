@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "./Kernel";
+import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel/Kernel";
 
 kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 

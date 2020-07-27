@@ -1,7 +1,7 @@
 import { ErrorMapper } from "utils/ErrorMapper";
 import { kernel } from "./Kernel";
-// import "./DummyProcess";
-import "./BootstrapProcess";
+// eslint-disable-next-line sort-imports
+import "Processes";
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
