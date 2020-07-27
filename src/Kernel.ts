@@ -105,8 +105,10 @@ class Kernel {
     }
 
     // TODO: add to stats
-    // log.info(`CPU Limit for tick: ${limit.toFixed(2)}/${Game.cpu.limit} Bucket: ${Game.cpu.bucket}`);
-    // // cnt < this.threads.size ? LogLevel.WARN : LogLevel.INFO, // TODO: log
+    // log.info(
+    //   `CPU Limit for tick: ${limit.toFixed(2)}/${Game.cpu.limit} Bucket: ${Game.cpu.bucket} Used ${Game.cpu.getUsed()}`
+    // );
+    // // // cnt < this.threads.size ? LogLevel.WARN : LogLevel.INFO, // TODO: log
     // log.info(`Ran ${this.processes.size} processes with a total of ${count} iterations`);
   }
 }
@@ -161,6 +163,7 @@ function* loop(processes: ProcessMap, limit: number): Generator<string | undefin
       //   log.error
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      log.critical(`${processName} failed with an error`);
       log.error(error);
       yield processName;
     }

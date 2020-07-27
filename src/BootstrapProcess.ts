@@ -137,26 +137,24 @@ function* bootstrapCreep(
   spawnId: Id<StructureSpawn>,
   creepName: string
 ): ProcessGeneratorResult {
-  while (true) {
-    const creep = Game.creeps[creepName];
+  const creep = Game.creeps[creepName];
 
-    if (creep.spawning) {
-      const spawn = deref(spawnId);
-      if (spawn && spawn.spawning) {
-        const remainingTime = spawn.spawning.remainingTime;
-        context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
-        yield* sleep(remainingTime);
-      }
+  if (creep.spawning) {
+    const spawn = deref(spawnId);
+    if (spawn && spawn.spawning) {
+      const remainingTime = spawn.spawning.remainingTime;
+      context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
+      yield* sleep(remainingTime);
     }
+  }
 
-    switch (creep.memory.task) {
-      case "harvest":
-        kernel.registerProcess(`${context.processName}:harvest`, bootstrapHarvester, creepName);
-        break;
-      case "haul":
-        kernel.registerProcess(`${context.processName}:haul`, bootstrapHauler, creepName);
-        break;
-    }
+  switch (creep.memory.task) {
+    case "harvest":
+      kernel.registerProcess(`${context.processName}:harvest`, bootstrapHarvester, creepName);
+      break;
+    case "haul":
+      kernel.registerProcess(`${context.processName}:haul`, bootstrapHauler, creepName);
+      break;
   }
 }
 
