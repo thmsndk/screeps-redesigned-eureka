@@ -161,6 +161,12 @@ function* bootstrapCreep(
 function* bootstrapHarvester(context: ProcessContext, creepName: string): ProcessGeneratorResult {
   while (true) {
     const creep = Game.creeps[creepName];
+
+    if (!creep) {
+      // creep is dead / gone, finish task
+      context.info(`${creepName} could not be found, terminating task`);
+      return;
+    }
     // const sourceId = creep.memory.target as Id<Source>;
 
     yield* moveToTarget(creepName, creep.memory.target);
@@ -174,6 +180,13 @@ function* bootstrapHarvester(context: ProcessContext, creepName: string): Proces
 function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGeneratorResult {
   while (true) {
     const creep = Game.creeps[creepName];
+
+    if (!creep) {
+      // creep is dead / gone, finish task
+      context.info(`${creepName} could not be found, terminating task`);
+      return;
+    }
+
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) >= 0) {
       const groundResources = creep.room.find(FIND_DROPPED_RESOURCES, { filter: RESOURCE_ENERGY }).map(r => r.id);
       // TODO: some sort of task statemachine

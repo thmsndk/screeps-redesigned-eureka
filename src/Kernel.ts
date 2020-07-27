@@ -38,9 +38,9 @@ export class ProcessContext {
   //     return this;
   //   }
 
-  public log(logLevel: LogLevel, message: string): void {
-    this.logger.log(logLevel, message);
-  }
+  // public log(logLevel: LogLevel, message: string): void {
+  //   this.logger.log(logLevel, message);
+  // }
 
   public critical(message: string): void {
     this.logger.critical(message);
