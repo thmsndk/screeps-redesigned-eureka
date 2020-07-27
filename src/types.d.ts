@@ -12,6 +12,7 @@ interface CreepMemory {
 interface Memory {
   uuid: number;
   log: any;
+  logLevel: import("Logger").LogLevel;
 }
 
 // `global` extension samples

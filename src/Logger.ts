@@ -1,6 +1,7 @@
 import { ErrorMapper } from "utils/ErrorMapper";
 
 export enum LogLevel {
+  DEBUG = "debug",
   INFO = "info",
   WARNING = "warning",
   CRITICAL = "critical",
@@ -11,6 +12,12 @@ export class Logger {
   private prefix: string;
   public constructor(prefix: string) {
     this.prefix = prefix;
+  }
+
+  public debug(message: string): void {
+    if (Memory.logLevel === LogLevel.DEBUG) {
+      this.log(LogLevel.DEBUG, message);
+    }
   }
 
   public info(message: string): void {

@@ -6,7 +6,7 @@ kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
   while (true) {
     try {
-      context.info("Awakened");
+      context.debug("Awakened");
 
       // this process should run per room?
       // TODO: request/spawn x multipurpose creeps
@@ -16,8 +16,6 @@ function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
         if (!room.controller?.my) {
           continue;
         }
-
-        context.info(room.name);
 
         const creeps = room.find(FIND_MY_CREEPS);
 
@@ -30,7 +28,7 @@ function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
         }
       }
 
-      context.info("Sleeping for 100 ticks");
+      context.debug("Sleeping for 100 ticks");
       yield* sleep(100);
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
@@ -183,7 +181,7 @@ function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGe
 
     if (!creep) {
       // creep is dead / gone, finish task
-      context.info(`${creepName} could not be found, terminating task`);
+      context.info(`${creepName} could not be found, terminating`);
       return;
     }
 
@@ -198,6 +196,13 @@ function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGe
 
         yield* moveToTarget(creepName, resource.id);
         const creep2 = deref(creep.id); // creep2 because we have yielded and need to refresh the creep
+
+        if (!creep2) {
+          // creep is dead / gone, finish task
+          context.info(`${creepName} could not be found, terminating`);
+          return;
+        }
+
         const resource2 = deref(resourceId);
         if (creep2 && resource2) {
           creep2.pickup(resource2);
@@ -225,13 +230,20 @@ function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGe
           continue;
         }
         yield* moveToTarget(creepName, structure.id);
+
         const creep2 = deref(creep.id);
+        if (!creep2) {
+          // creep is dead / gone, finish task
+          context.info(`${creepName} could not be found, terminating`);
+          return;
+        }
+
         const structure2 = deref<StructureSpawn | StructureExtension>(id);
         if (creep2 && structure2) {
           creep2.transfer(structure2, RESOURCE_ENERGY);
         }
 
-        if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+        if (creep2.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
           break;
         }
       }
@@ -244,7 +256,8 @@ function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGe
 function* moveToTarget(creepName: string, id: Id<RoomObject> | undefined) {
   while (true) {
     const creep = Game.creeps[creepName];
-    if (!id) {
+
+    if (!id || !creep) {
       return;
     }
 
@@ -263,7 +276,7 @@ function* moveToTarget(creepName: string, id: Id<RoomObject> | undefined) {
 function* harvest(creepName: string, id: Id<RoomObject> | undefined) {
   while (true) {
     const creep = Game.creeps[creepName];
-    if (!id) {
+    if (!id || !creep) {
       return;
     }
 
