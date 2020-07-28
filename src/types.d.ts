@@ -9,6 +9,10 @@ interface CreepMemory {
   task: string;
 }
 
+interface RoomMemory {
+  bootstrap: boolean;
+}
+
 interface Memory {
   uuid: number;
   log: any;

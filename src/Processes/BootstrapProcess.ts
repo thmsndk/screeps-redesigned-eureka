@@ -1,45 +1,47 @@
-import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel/Kernel";
+import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
+import { deref, derefRoomObjects } from "utils/Deref";
+import { harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 
 kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 
 // gonna use a cache here, but context.memory is probably smarter?
 function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
   while (true) {
-    try {
-      context.debug("Awakened");
+    context.debug("Awakened");
 
-      // this process should run per room?
-      // TODO: request/spawn x multipurpose creeps
-      const rooms = Object.values(Game.rooms);
+    // this process should run per room?
+    // TODO: request/spawn x multipurpose creeps
+    const rooms = Object.values(Game.rooms);
 
-      for (const room of rooms) {
-        if (!room.controller?.my) {
-          continue;
-        }
-
-        const creeps = room.find(FIND_MY_CREEPS);
-
-        if (creeps.length === 0) {
-          // TODO: spawn bootstrap thread
-          const key = `${context.processName}:${room.name}:bootstrap`;
-          if (!kernel.hasProcess(key)) {
-            kernel.registerProcess(key, bootstrapRoom, room.name);
-          }
-        }
+    for (const room of rooms) {
+      if (!room.controller?.my) {
+        continue;
       }
 
-      context.debug("Sleeping for 100 ticks");
-      yield* sleep(100);
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      console.log(`error ${error}`);
+      const creeps = room.find(FIND_MY_CREEPS);
+      const hasHarvesters = creeps.some(c => c.memory.task === "harvest"); // TODO: should be a lookup after goal/objectives
+
+      if (creeps.length === 0 || !hasHarvesters) {
+        // TODO: spawn bootstrap thread
+        const key = `${context.processName}:${room.name}:bootstrap`;
+        if (!kernel.hasProcess(key)) {
+          kernel.registerProcess(key, bootstrapRoom, room.name);
+        }
+      }
     }
+
+    context.debug("Sleeping for 100 ticks");
+    yield* sleep(100);
   }
 }
 const AVERAGE_FILL_TIME = 50;
 const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
 function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGeneratorResult {
   context.info(`Bootstrapping initialized for ${roomName}`);
+  let memory = Memory.rooms[roomName];
+  if (!memory) {
+    memory = { bootstrap: true };
+  }
   while (true) {
     const room = Game.rooms[roomName];
 
@@ -71,29 +73,14 @@ function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGener
     // TODO: do we need to do other things?
 
     // end process
+    memory = Memory.rooms[roomName];
+    if (memory) {
+      memory.bootstrap = false;
+    }
+
     return;
   }
 }
-
-const deref = <T>(id: Id<T>): T | false => {
-  const roomObject = Game.getObjectById(id);
-  if (roomObject) {
-    return roomObject;
-  }
-  return false;
-};
-
-const derefRoomObjects = <T>(list: Id<T>[]): T[] => {
-  const result = list.reduce<T[]>((results, id) => {
-    const ro = deref(id);
-    if (ro) {
-      results.push(ro);
-    }
-    return results;
-  }, []);
-
-  return result;
-};
 
 const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
 
@@ -136,6 +123,12 @@ function* bootstrapCreep(
   creepName: string
 ): ProcessGeneratorResult {
   const creep = Game.creeps[creepName];
+
+  if (!creep) {
+    // creep is dead / gone, finish task
+    context.info(`${creepName} could not be found, terminating task`);
+    return;
+  }
 
   if (creep.spawning) {
     const spawn = deref(spawnId);
@@ -247,45 +240,10 @@ function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGe
           break;
         }
       }
+      // fallback to upgrading
+      yield* upgradeUntillNoEnergy(creepName);
     }
 
     yield;
-  }
-}
-
-function* moveToTarget(creepName: string, id: Id<RoomObject> | undefined) {
-  while (true) {
-    const creep = Game.creeps[creepName];
-
-    if (!id || !creep) {
-      return;
-    }
-
-    const target = Game.getObjectById(id);
-    if (target) {
-      if (creep.pos.inRangeTo(target.pos, 1)) {
-        return;
-      }
-
-      creep.moveTo(target.pos, { range: 1 });
-      yield;
-    }
-  }
-}
-
-function* harvest(creepName: string, id: Id<RoomObject> | undefined) {
-  while (true) {
-    const creep = Game.creeps[creepName];
-    if (!id || !creep) {
-      return;
-    }
-
-    const source = Game.getObjectById<Source>(id);
-    if (source) {
-      if (source.energy > 0) {
-        creep.harvest(source);
-        yield;
-      }
-    }
   }
 }
