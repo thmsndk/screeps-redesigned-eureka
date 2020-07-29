@@ -1,9 +1,9 @@
-import { ProcessContext, kernel } from "../Kernel/Kernel";
+import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel/Kernel";
 
 // TODO: restartthread on register?
 kernel.registerProcess("DummyProcess", dummyProcess);
 
-function* dummyProcess(context: ProcessContext): Generator {
+function* dummyProcess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   // never ending process
   while (true) {
     context.info("Hello from dummy process, yielding");

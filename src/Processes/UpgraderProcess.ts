@@ -5,7 +5,7 @@ import { moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 kernel.registerProcess("UpgraderProcess", upgraderprocess);
 
 const upgraders: Map<string, string[]> = new Map<string, string[]>();
-function* upgraderprocess(context: ProcessContext): ProcessGeneratorResult {
+function* upgraderprocess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   // never ending process
   while (true) {
     // TODO: spawn requests like bootstrap
@@ -36,7 +36,7 @@ function* upgraderprocess(context: ProcessContext): ProcessGeneratorResult {
 const AVERAGE_FILL_TIME = 50;
 const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
 const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
-function* upgradeRoom(context: ProcessContext, roomName: string): ProcessGeneratorResult {
+function* upgradeRoom<T extends any[]>(context: ProcessContext<T>, roomName: string): ProcessGeneratorResult {
   while (true) {
     const memory = Memory.rooms[roomName];
     if (!memory || memory?.bootstrap) {
@@ -76,8 +76,8 @@ function* upgradeRoom(context: ProcessContext, roomName: string): ProcessGenerat
   }
 }
 
-function* spawnCreep(
-  context: ProcessContext,
+function* spawnCreep<T extends any[]>(
+  context: ProcessContext<T>,
   controllerId: Id<StructureController>,
   spawnIds: Id<StructureSpawn>[],
   task: string,
@@ -122,8 +122,8 @@ function* spawnCreep(
   }
 }
 
-export function* upgradeController(
-  context: ProcessContext,
+export function* upgradeController<T extends any[]>(
+  context: ProcessContext<T>,
   roomName: string,
   spawnId: Id<StructureSpawn>,
   creepName: string

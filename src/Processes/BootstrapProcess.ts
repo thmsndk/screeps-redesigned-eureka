@@ -5,7 +5,7 @@ import { harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 
 // gonna use a cache here, but context.memory is probably smarter?
-function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
+function* bootstrapProcess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   while (true) {
     context.debug("Awakened");
 
@@ -36,7 +36,7 @@ function* bootstrapProcess(context: ProcessContext): ProcessGeneratorResult {
 }
 const AVERAGE_FILL_TIME = 50;
 const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
-function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGeneratorResult {
+function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: string): ProcessGeneratorResult {
   context.info(`Bootstrapping initialized for ${roomName}`);
   let memory = Memory.rooms[roomName];
   if (!memory) {
@@ -84,8 +84,8 @@ function* bootstrapRoom(context: ProcessContext, roomName: string): ProcessGener
 
 const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
 
-function* spawnCreep(
-  context: ProcessContext,
+function* spawnCreep<T extends any[]>(
+  context: ProcessContext<T>,
   sourceId: Id<Source>,
   spawnIds: Id<StructureSpawn>[],
   task: string
@@ -117,8 +117,8 @@ function* spawnCreep(
   }
 }
 
-function* bootstrapCreep(
-  context: ProcessContext,
+function* bootstrapCreep<T extends any[]>(
+  context: ProcessContext<T>,
   spawnId: Id<StructureSpawn>,
   creepName: string
 ): ProcessGeneratorResult {
@@ -149,7 +149,7 @@ function* bootstrapCreep(
   }
 }
 
-function* bootstrapHarvester(context: ProcessContext, creepName: string): ProcessGeneratorResult {
+function* bootstrapHarvester<T extends any[]>(context: ProcessContext<T>, creepName: string): ProcessGeneratorResult {
   while (true) {
     const creep = Game.creeps[creepName];
 
@@ -168,7 +168,7 @@ function* bootstrapHarvester(context: ProcessContext, creepName: string): Proces
   }
 }
 
-function* bootstrapHauler(context: ProcessContext, creepName: string): ProcessGeneratorResult {
+function* bootstrapHauler<T extends any[]>(context: ProcessContext<T>, creepName: string): ProcessGeneratorResult {
   while (true) {
     const creep = Game.creeps[creepName];
 

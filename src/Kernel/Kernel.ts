@@ -4,16 +4,16 @@ import { LogLevel, Logger } from "../Logger";
 const log = new Logger("[Kernel]");
 
 export type ProcessGeneratorResult = Generator<boolean | undefined>;
-export type ProcessGenerator = (context: ProcessContext, ...args: any[]) => ProcessGeneratorResult;
+export type ProcessGenerator<T extends any[]> = (context: ProcessContext<T>, ...args: T) => ProcessGeneratorResult;
 
-export class ProcessContext {
+export class ProcessContext<T extends any[]> {
   public logger: Logger;
   private threads: Set<Thread>; // maybe?
-  private kernel: Kernel;
+  private kernel: Kernel<T>;
   public processName: string;
   private fn: ProcessGeneratorResult;
 
-  public constructor(_kernel: Kernel, processName: string, fn: ProcessGenerator, ...args: any[]) {
+  public constructor(_kernel: Kernel<T>, processName: string, fn: ProcessGenerator<T>, ...args: T) {
     this.logger = new Logger(`[${processName}]`);
     this.kernel = _kernel;
     this.threads = new Set<Thread>();
@@ -57,16 +57,16 @@ export class ProcessContext {
     this.logger.error(error);
   }
 }
-type ProcessMap = Map<string, ProcessContext>;
+type ProcessMap<T extends any[]> = Map<string, ProcessContext<T>>;
 
-class Kernel {
+class Kernel<T extends any[]> {
   private threads: Map<any, any>;
-  private processes: ProcessMap;
+  private processes: ProcessMap<T>;
 
   public constructor() {
     log.info(`initialzing kernel`);
     this.threads = new Map();
-    this.processes = new Map<string, ProcessContext>();
+    this.processes = new Map<string, ProcessContext<T>>();
   }
 
   public hasProcess(key: string): boolean {
@@ -77,7 +77,7 @@ class Kernel {
     // inside a process there can be threads
   }
 
-  public registerProcess(processName: string, fn: ProcessGenerator, ...args: any[]) {
+  public registerProcess<T extends any[]>(processName: string, fn: ProcessGenerator<T>, ...args: T) {
     if (!this.processes.has(processName)) {
       log.info(`Registering ${processName}`);
       this.processes.set(processName, new ProcessContext(this, processName, fn, ...args));
@@ -125,7 +125,7 @@ export function* sleep(ticks: number): ProcessGeneratorResult {
   }
 }
 
-function* loop(processes: ProcessMap, limit: number): Generator<string | undefined> {
+function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Generator<string | undefined> {
   const queue = Array.from(processes); // shuffle them?
   const cpu: { [index: string]: number } = {};
   const iterations: { [index: string]: number } = {};
