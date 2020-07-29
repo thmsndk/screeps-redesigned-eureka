@@ -24,7 +24,7 @@
 "",
             "kernel.registerProcess(\"${TM_FILENAME_BASE}\", ${TM_FILENAME_BASE/(.+)/${1:/downcase}/});",
             "",
-            "function* ${TM_FILENAME_BASE/(.+)/${1:/downcase}/}<T extends any[]>(context: ProcessContext): ProcessGeneratorResult {",
+            "function* ${TM_FILENAME_BASE/(.+)/${1:/downcase}/}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
             "  // never ending process",
             "  while (true) {",
             "    yield;",
@@ -40,7 +40,7 @@
         "scope": "javascript,typescript",
         "prefix": ["pf"],
         "body": [
-            "function* ${2:name}<T extends any[]>(context: ProcessContext): ProcessGeneratorResult {",
+            "function* ${2:name}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
             "  while (true) {",
             "    yield;",
             "  }",

@@ -26,4 +26,8 @@ export const loop = ErrorMapper.wrapLoop(() => {
   // TODO: Stats in segments or some sort of wrapper for storing data either in memory, segments or heap?
   // TODO: The ability to request help from other rooms (energy request, creep request)
   // TODO: An objective/mission system. e.g. kill player XYZ inside that there is a set of "tasks/missions" to fulfill said objective.
+
+  // Objectives
+  // - harvest sources
+  // does requests turn into objectives? are requests just objectives?
 });

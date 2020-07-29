@@ -1,6 +1,6 @@
 import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
-import { harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
+import { findDroppedEnergy, harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 
 kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 
@@ -55,7 +55,7 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
 
     let offset = 0;
     for (const source of sources) {
-      const key = (index: string) => `${context.processName}:${room.name}:bootstrap:spawnCreep:${index}`;
+      const key = (index: string) => `${context.processName}:spawnCreep:${index}`;
 
       // objective, mine source untill death
       kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, spawns, "harvest");
@@ -111,9 +111,8 @@ function* spawnCreep<T extends any[]>(
 
         return;
       }
-
-      yield;
     }
+    yield;
   }
 }
 
@@ -179,31 +178,7 @@ function* bootstrapHauler<T extends any[]>(context: ProcessContext<T>, creepName
     }
 
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) >= 0) {
-      const groundResources = creep.room.find(FIND_DROPPED_RESOURCES, { filter: RESOURCE_ENERGY }).map(r => r.id);
-      // TODO: some sort of task statemachine
-      for (const resourceId of groundResources) {
-        const resource = deref(resourceId);
-        if (!resource) {
-          continue;
-        }
-
-        yield* moveToTarget(creepName, resource.id);
-        const creep2 = deref(creep.id); // creep2 because we have yielded and need to refresh the creep
-
-        if (!creep2) {
-          // creep is dead / gone, finish task
-          context.info(`${creepName} could not be found, terminating`);
-          return;
-        }
-
-        const resource2 = deref(resourceId);
-        if (creep2 && resource2) {
-          creep2.pickup(resource2);
-        }
-        if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-          break;
-        }
-      }
+      yield* findDroppedEnergy(creepName);
     }
 
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {

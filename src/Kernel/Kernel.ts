@@ -92,6 +92,8 @@ class Kernel<T extends any[]> {
     }
     // TODO: scheduler
     // do we want to chop up our cpu in mini "buckets" to limit each process after a specific time to allow other processes to run?
+    // https://en.wikipedia.org/wiki/PID_controller
+    // https://www.csimn.com/CSI_pages/PIDforDummies.html
     const limit = Game.cpu.limit;
     const scheduler = loop(this.processes, limit);
     let count = 0;
