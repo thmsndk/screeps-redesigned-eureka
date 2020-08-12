@@ -17,7 +17,6 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   // TODO: getting a generator is already running error, need to investigate bootstraphauler
 
-  // TODO: look into typing arguments for registerprocess based on supplied generator for typesafety
   // TODO: global reset detection, code upload detection as a seperate thing from global resets, even though they are technically the same, but we want to render them differnetly in grafana
   // TODO: A bootstrap stage MWC creeps
   // TODO: A spawn process that can handle multiple spawns, the ability to cancel a request spawn request, perhaps a callback, perhaps intershard?
