@@ -1,6 +1,7 @@
 import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { findDroppedEnergy, harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
+import { requestCreep } from "./SpawnProcess";
 
 kernel.registerProcess("BootstrapProcess", bootstrapProcess);
 
@@ -51,20 +52,19 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
     // TODO: verify that they have spawned, need to do something smart once we reach intershard requests
     // TODO: finish bootstrapping
     const sources = room.find(FIND_SOURCES);
-    const spawns = room.find(FIND_MY_SPAWNS).map(spawn => spawn.id);
 
     let offset = 0;
     for (const source of sources) {
       const key = (index: string) => `${context.processName}:spawnCreep:${index}`;
 
       // objective, mine source untill death
-      kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, spawns, "harvest");
+      kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, source.room.name, "harvest");
       offset += offsetSpawnRequest();
       context.info(`Sleeping for ${offset}`);
       yield* sleep(offset);
 
       // objective, haul untill death, primarly from source
-      kernel.registerProcess(key(`${source.id}:haul`), spawnCreep, source.id, spawns, "haul");
+      kernel.registerProcess(key(`${source.id}:haul`), spawnCreep, source.id, source.room.name, "haul");
       offset += offsetSpawnRequest();
       context.info(`Sleeping for ${offset}`);
       yield* sleep(offset);
@@ -82,45 +82,28 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
   }
 }
 
-const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
-
 function* spawnCreep<T extends any[]>(
   context: ProcessContext<T>,
   sourceId: Id<Source>,
-  spawnIds: Id<StructureSpawn>[],
+  roomName: string,
   task: string
 ): ProcessGeneratorResult {
-  context.info(`${spawnIds.length} ${spawnIds.join(",")}`);
-  while (true) {
-    const spawns = derefRoomObjects(spawnIds);
-
-    for (const spawn of spawns) {
-      if (spawn.spawning) {
-        continue;
+  const creepName = `bootstrap ${Game.time}`;
+  requestCreep(
+    {
+      body: [WORK, CARRY, MOVE],
+      name: creepName,
+      opts: {
+        memory: { role: `bootstrap:${task}`, target: sourceId, task }
       }
-
-      if (spawn.room.energyAvailable >= workCarryMoveCost) {
-        const creepName = `bootstrap ${Game.time}`;
-        const result = spawn.spawnCreep([WORK, CARRY, MOVE], creepName, {
-          memory: { role: `bootstrap:${task}`, target: sourceId, task }
-        });
-
-        // TODO: verify result?
-        // TODO: spawn creep management with a predefined sleep interval for spawntime
-        kernel.registerProcess(`boostrap:${spawn.room.name}:${creepName}`, bootstrapCreep, spawn.id, creepName);
-
-        return;
-      }
+    },
+    ticket => {
+      kernel.registerProcess(`boostrap:${roomName}:${creepName}`, bootstrapCreep, creepName);
     }
-    yield;
-  }
+  );
 }
 
-function* bootstrapCreep<T extends any[]>(
-  context: ProcessContext<T>,
-  spawnId: Id<StructureSpawn>,
-  creepName: string
-): ProcessGeneratorResult {
+function* bootstrapCreep<T extends any[]>(context: ProcessContext<T>, creepName: string): ProcessGeneratorResult {
   const creep = Game.creeps[creepName];
 
   if (!creep) {
@@ -130,12 +113,9 @@ function* bootstrapCreep<T extends any[]>(
   }
 
   if (creep.spawning) {
-    const spawn = deref(spawnId);
-    if (spawn && spawn.spawning) {
-      const remainingTime = spawn.spawning.remainingTime;
-      context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
-      yield* sleep(remainingTime);
-    }
+    const remainingTime = creep.body.length * CREEP_SPAWN_TIME;
+    context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
+    yield* sleep(remainingTime);
   }
 
   switch (creep.memory.task) {
