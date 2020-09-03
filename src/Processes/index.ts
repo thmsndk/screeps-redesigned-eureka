@@ -1,6 +1,6 @@
 // import "./DummyProcess";
+import "./SpawnProcess";
 import "./BootstrapProcess";
-// import "./UpgraderProcess";
+import "./UpgraderProcess";
 // import "./AutonomousBuilderProcess";
 // import "./HarvesterProcess";
-import "./SpawnProcess";
