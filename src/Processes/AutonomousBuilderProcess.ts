@@ -1,6 +1,7 @@
 import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { buildUntillNoEnergy, findDroppedEnergy } from "utils/Creep";
+import { requestCreep } from "./SpawnProcess";
 
 kernel.registerProcess("AutonomousBuilderProcess", autonomousBuilderProcess);
 
@@ -13,7 +14,6 @@ function* autonomousBuilderProcess<T extends any[]>(context: ProcessContext<T>):
   // never ending process
   while (true) {
     const rooms = Object.values(Game.rooms);
-    let offset = 0;
     for (const room of rooms) {
       if (!room.controller?.my) {
         continue;
@@ -38,15 +38,20 @@ function* autonomousBuilderProcess<T extends any[]>(context: ProcessContext<T>):
       const neededBuilders = Math.min(Math.ceil(cSites.length / 10), 1) - (roomBuilders?.length ?? 0);
       //   context.info(`${roomBuilders?.length ?? 0} builders, ${neededBuilders}`);
       if (neededBuilders > 0) {
-        const spawns = room.find(FIND_MY_SPAWNS).map(spawn => spawn.id);
-
         for (let i = 0; i < neededBuilders; i++) {
-          const key = (index: string) => `${context.processName}:${room.name}:spawnCreep:${index}`;
-
           // objective, build csites untill death
-          kernel.registerProcess(key(`${Game.time}:${i}`), spawnBuilder, spawns, "build", offset, i);
-          offset += offsetSpawnRequest();
-          yield* sleep(offset);
+          const creepName = `build ${Game.time}`;
+
+          roomBuilders?.push(creepName);
+
+          requestCreep(
+            {
+              body: [WORK, CARRY, MOVE],
+              name: creepName,
+              opts: { memory: { role: `build`, target: room.controller.id, task: "build" } }
+            },
+            () => kernel.registerProcess(`${room.name}:build:${creepName}`, builder, room.name, creepName)
+          );
         }
         yield;
       }
@@ -56,54 +61,9 @@ function* autonomousBuilderProcess<T extends any[]>(context: ProcessContext<T>):
   }
 }
 
-function* spawnBuilder<T extends any[]>(
-  context: ProcessContext<T>,
-  spawnIds: Id<StructureSpawn>[],
-  task: string,
-  offset: number,
-  spawnIndex: number
-): ProcessGeneratorResult {
-  yield* sleep(offset);
-
-  while (true) {
-    const spawns = derefRoomObjects(spawnIds);
-
-    for (const spawn of spawns) {
-      if (spawn.spawning) {
-        continue;
-      }
-
-      if (spawn.room.energyAvailable >= workCarryMoveCost) {
-        const creepName = `build ${Game.time} ${spawnIndex}`;
-        const result = spawn.spawnCreep([WORK, CARRY, MOVE], creepName, {
-          memory: { role: `build`, task }
-        });
-
-        const roomBuilders = builders.get(spawn.room.name);
-        if (roomBuilders) {
-          const creep = Game.creeps[creepName];
-          if (creep) {
-            roomBuilders.push(creep.name);
-            kernel.registerProcess(
-              `${spawn.room.name}:build:${creepName}`,
-              builder,
-              spawn.room.name,
-              spawn.id,
-              creepName
-            );
-            return;
-          }
-        }
-      }
-    }
-    yield;
-  }
-}
-
 function* builder<T extends any[]>(
   context: ProcessContext<T>,
   roomName: string,
-  spawnId: Id<StructureSpawn>,
   creepName: string
 ): ProcessGeneratorResult {
   while (true) {
@@ -120,12 +80,9 @@ function* builder<T extends any[]>(
     }
 
     if (creep.spawning) {
-      const spawn = deref(spawnId);
-      if (spawn && spawn.spawning) {
-        const remainingTime = spawn.spawning.remainingTime;
-        context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
-        yield* sleep(remainingTime);
-      }
+      const remainingTime = creep.body.length * CREEP_SPAWN_TIME;
+      context.info(`Waiting on spawn to finish in ${remainingTime} ticks`);
+      yield* sleep(remainingTime);
     }
 
     creep = Game.creeps[creepName];
