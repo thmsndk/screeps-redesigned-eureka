@@ -5,10 +5,6 @@ import { requestCreep } from "./SpawnProcess";
 
 kernel.registerProcess("AutonomousBuilderProcess", autonomousBuilderProcess);
 
-const AVERAGE_FILL_TIME = 50;
-const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
-const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
-
 const builders: Map<string, string[]> = new Map<string, string[]>();
 function* autonomousBuilderProcess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   // never ending process
@@ -52,6 +48,8 @@ function* autonomousBuilderProcess<T extends any[]>(context: ProcessContext<T>):
             },
             () => kernel.registerProcess(`${room.name}:build:${creepName}`, builder, room.name, creepName)
           );
+
+          yield;
         }
         yield;
       }

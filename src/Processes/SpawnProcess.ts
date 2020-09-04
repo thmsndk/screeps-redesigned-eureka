@@ -28,7 +28,14 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
   while (true) {
     const spawns = Object.values(Game.spawns);
     const energyUsed = new Map<string, number>();
+
+    const availableSpawnsThisTick = spawns.filter(spawn => !spawn.spawning);
     for (const [ticket, request] of queue) {
+      if (!availableSpawnsThisTick.length) {
+        // no more spawns, break out and wait for next tick
+        break;
+      }
+
       let body: BodyPartConstant[];
       if (isScalingSpawnRequest(request.parameters)) {
         // TODO: scale body parts up
@@ -42,7 +49,7 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
       const cost = body.reduce((sum, part) => (sum += BODYPART_COST[part]), 0);
 
       // TODO: determine what spawn to use?
-      for (const spawn of spawns) {
+      for (const [i, spawn] of availableSpawnsThisTick.entries()) {
         if (spawn.spawning) {
           continue;
         }
@@ -57,6 +64,10 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
 
         spawn.spawnCreep(body, name, request.parameters.opts);
         queue.delete(ticket);
+
+        // remove spawn during this tick
+        availableSpawnsThisTick.splice(i, 1);
+
         // TODO: #10 spawn a process that triggers on success once it is finished spawning?
         request.onSuccess(ticket);
 
