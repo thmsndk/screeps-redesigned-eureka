@@ -11,11 +11,6 @@ const upgraders: Map<string, string[]> = new Map<string, string[]>();
 function* upgraderprocess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   // never ending process
   while (true) {
-    // TODO: spawn requests like bootstrap
-    // calculate how many upgraders we need
-    // if no creeps with controller as target and upgrade goal spawn N creeps with the purpose of upgrading the controller
-    // TODO: upgrader creep process
-
     const rooms = Object.values(Game.rooms);
     for (const room of rooms) {
       if (!room.controller?.my) {
@@ -43,8 +38,8 @@ function* upgradeRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
       yield* sleep(80);
     }
 
-    // TODO: determine amount of upgraders needed in a sane way
     let room = Game.rooms[roomName];
+    // TODO: #11 handle amount and size of upgraders at RCL 8
     const neededUpgraders = room.storage
       ? Math.ceil(room.storage.store.getUsedCapacity(RESOURCE_ENERGY) / 1000)
       : Math.floor(room.energyAvailable / 60);
@@ -58,7 +53,6 @@ function* upgradeRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
     }
 
     if (roomUpgraders && roomUpgraders.length < neededUpgraders) {
-      // TODO: spawn request
       room = Game.rooms[roomName];
       if (!room.controller) {
         return;

@@ -10,8 +10,7 @@ function* bootstrapProcess<T extends any[]>(context: ProcessContext<T>): Process
   while (true) {
     context.debug("Awakened");
 
-    // this process should run per room?
-    // TODO: request/spawn x multipurpose creeps
+    // TODO: request/spawn x multipurpose creeps?
     const rooms = Object.values(Game.rooms);
 
     for (const room of rooms) {
@@ -23,7 +22,8 @@ function* bootstrapProcess<T extends any[]>(context: ProcessContext<T>): Process
       const hasHarvesters = creeps.some(c => c.memory.task === "harvest"); // TODO: should be a lookup after goal/objectives
 
       if (creeps.length === 0 || !hasHarvesters) {
-        // TODO: spawn bootstrap thread
+        // TODO: put room in bootstrap mode, normal harvest process should react accordingly
+        //
         const key = `${context.processName}:${room.name}:bootstrap`;
         if (!kernel.hasProcess(key)) {
           kernel.registerProcess(key, bootstrapRoom, room.name);
@@ -47,8 +47,6 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
     const room = Game.rooms[roomName];
 
     // TODO: here we need objectives / missions so we can queue that, and something else is responsible for running that
-    // TODO: request help or spawn yourself
-    // TODO: spawn 1 worker and 1 hauler for each source
     // TODO: verify that they have spawned, need to do something smart once we reach intershard requests
     // TODO: finish bootstrapping
     const sources = room.find(FIND_SOURCES);

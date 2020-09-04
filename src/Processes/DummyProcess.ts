@@ -1,6 +1,5 @@
 import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel/Kernel";
 
-// TODO: restartthread on register?
 kernel.registerProcess("DummyProcess", dummyProcess);
 
 function* dummyProcess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
@@ -14,3 +13,5 @@ function* dummyProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
     break;
   }
 }
+
+// TODO: Example processes for a process that is spread over multiple ticks, one that runs multiple times during the same tick.

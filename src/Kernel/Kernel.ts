@@ -80,6 +80,7 @@ class Kernel<T extends any[]> {
   public registerProcess<T extends any[]>(processName: string, fn: ProcessGenerator<T>, ...args: T) {
     if (!this.processes.has(processName)) {
       log.info(`Registering ${processName}`);
+      // TODO: #6 should `this` be the context of a process? https://www.typescriptlang.org/docs/handbook/functions.html#this
       this.processes.set(processName, new ProcessContext(this, processName, fn, ...args));
     }
   }
@@ -90,11 +91,13 @@ class Kernel<T extends any[]> {
       log.critical(`[Bucket] ${Game.cpu.bucket} < 1000 waiting for more bucket`);
       return;
     }
-    // TODO: scheduler
+
+    // TODO: #2 limits for each process
     // do we want to chop up our cpu in mini "buckets" to limit each process after a specific time to allow other processes to run?
     // https://en.wikipedia.org/wiki/PID_controller
     // https://www.csimn.com/CSI_pages/PIDforDummies.html
     const limit = Game.cpu.limit;
+    // TODO: scheduler
     const scheduler = loop(this.processes, limit);
     let count = 0;
     for (const processName of scheduler) {
@@ -109,7 +112,7 @@ class Kernel<T extends any[]> {
       count++;
     }
 
-    // TODO: add to stats
+    // TODO: #3 add process count to stats for graphing
     // log.info(
     //   `CPU Limit for tick: ${limit.toFixed(2)}/${Game.cpu.limit} Bucket: ${Game.cpu.bucket} Used ${Game.cpu.getUsed()}`
     // );
@@ -118,6 +121,7 @@ class Kernel<T extends any[]> {
   }
 }
 
+// TODO: #5 Threads / child processes for shared heap / context from the same parent process
 class Thread {}
 
 export function* sleep(ticks: number): ProcessGeneratorResult {
@@ -152,6 +156,7 @@ function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Genera
       cpu[processName] = cpu[processName] || 0;
       cpu[processName] += dur;
 
+      // TODO: #4 more descriptive yield values
       if (!done && value === true) {
         // move to end of queue more procesign to be done
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions

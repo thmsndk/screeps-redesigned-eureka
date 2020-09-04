@@ -40,9 +40,9 @@ function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
     const roomHarvesters = harvesters.get(roomName);
     const roomHHaulers = haulers.get(roomName);
 
-    // TODO: scale amount of harvesters based on mining spots and room level
+    // TODO: #7 scale amount of harvesters based on mining spots and room level
     const neededHarvesters = sources.length;
-    // TODO: haulers should be spawned based on some sort of resource "delivery" "request" that runs on repeat.
+    // TODO: #8 haulers should be spawned based on some sort of resource "delivery" "request" that runs on repeat.
     const neededHaulers = sources.length;
 
     let offset = 0;

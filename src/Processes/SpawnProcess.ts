@@ -2,6 +2,7 @@ import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel";
 
 kernel.registerProcess("SpawnProcess", spawnProcess);
 
+// TODO: A spawn process that can handle multiple spawns, the ability to cancel a request spawn request, perhaps a callback, perhaps intershard?
 // TODO: we need to have requests, for now we can just utilize fifo, and an "emergency" queue that is checked first.
 
 interface SpawnRequestBase {
@@ -28,8 +29,6 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
     const spawns = Object.values(Game.spawns);
     const energyUsed = new Map<string, number>();
     for (const [ticket, request] of queue) {
-      // TODO: keep track of energy used in room, and energy remaining.
-
       let body: BodyPartConstant[];
       if (isScalingSpawnRequest(request.parameters)) {
         // TODO: scale body parts up
@@ -48,6 +47,7 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
           continue;
         }
 
+        // TODO: #9 take used energy this tick into consideration when determining available energy
         if (spawn.room.energyAvailable < cost) {
           continue;
         }
@@ -57,7 +57,7 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
 
         spawn.spawnCreep(body, name, request.parameters.opts);
         queue.delete(ticket);
-        // TODO: spawn a process that triggers on success once it is finished spawning?
+        // TODO: #10 spawn a process that triggers on success once it is finished spawning?
         request.onSuccess(ticket);
 
         break;
@@ -75,11 +75,11 @@ function isScalingSpawnRequest(object: any): object is ScalingSpawnRequest {
 export function requestCreep(request: SpawnRequest | ScalingSpawnRequest, onSuccess: (ticket: string) => void): string {
   // TODO: support for fulfilling requests from other rooms.
   // TODO: requests should have an objective reference?
-  // TODO: do we utilize a callback function for when a request has been fulfilled?
 
   const ticket = new Date().getTime().toString(); // TODO: get a better ticket
 
   queue.set(ticket, { parameters: request, onSuccess });
 
+  // TODO: A ticket should either be a creep name or a ticket, so you can exchange the ticket for a creepName or creepId at a later point in time.
   return ticket;
 }
