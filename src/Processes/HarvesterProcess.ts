@@ -1,6 +1,7 @@
 import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { findDroppedEnergy, harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
+import { requestCreep } from "./SpawnProcess";
 
 kernel.registerProcess("HarvesterProcess", harvesterprocess);
 
@@ -21,48 +22,37 @@ function* harvesterprocess<T extends any[]>(context: ProcessContext<T>): Process
       haulers.set(room.name, []);
     }
 
-    const key = `${context.processName}:${room.name}:harvest`;
+    const key = `${room.name}:harvest`;
     if (!kernel.hasProcess(key)) {
       kernel.registerProcess(key, harvestRoom, room.name);
     }
   }
 }
 
-const AVERAGE_FILL_TIME = 50;
-const offsetSpawnRequest = () => CREEP_SPAWN_TIME * 3 + AVERAGE_FILL_TIME; // WCM
-
 function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: string): ProcessGeneratorResult {
   while (true) {
     const room = Game.rooms[roomName];
     const sources = room.find(FIND_SOURCES);
-    const spawns = room.find(FIND_MY_SPAWNS).map(spawn => spawn.id);
 
     const roomHarvesters = harvesters.get(roomName);
-    const roomHHaulers = haulers.get(roomName);
+    const roomHaulers = haulers.get(roomName);
 
     // TODO: #7 scale amount of harvesters based on mining spots and room level
     const neededHarvesters = sources.length;
     // TODO: #8 haulers should be spawned based on some sort of resource "delivery" "request" that runs on repeat.
     const neededHaulers = sources.length;
 
-    let offset = 0;
     for (const source of sources) {
-      const key = (index: string) => `${context.processName}:spawnCreep:${index}`;
+      const key = (index: string) => `${context.processName}:${index}`;
 
       if (roomHarvesters && roomHarvesters.length < neededHarvesters) {
         // objective, mine source untill death
-        kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, spawns, "harvest", offset);
-        offset += offsetSpawnRequest();
-        context.info(`Sleeping for ${offset}`);
-        yield* sleep(offset);
+        spawnCreep(key(`${source.id}:harvest`), roomHarvesters, "harvest", source.id);
       }
 
-      if (roomHHaulers && roomHHaulers.length < neededHaulers) {
+      if (roomHaulers && roomHaulers.length < neededHaulers) {
         // objective, haul untill death, primarly from source
-        kernel.registerProcess(key(`${source.id}:haul`), spawnCreep, source.id, spawns, "haul", offset);
-        offset += offsetSpawnRequest();
-        context.info(`Sleeping for ${offset}`);
-        yield* sleep(offset);
+        spawnCreep(key(`${source.id}:haul`), roomHaulers, "haul", source.id);
       }
     }
 
@@ -70,61 +60,25 @@ function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
   }
 }
 
-const workCarryMoveCost = BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE];
-function* spawnCreep<T extends any[]>(
-  context: ProcessContext<T>,
-  sourceId: Id<Source>,
-  spawnIds: Id<StructureSpawn>[],
-  task: string,
-  offset: number
-): ProcessGeneratorResult {
-  yield* sleep(offset);
+function spawnCreep(processName: string, creepList: string[], task: string, sourceId: Id<Source>) {
+  const creepName = `${task} ${Game.time}`;
 
-  while (true) {
-    const spawns = derefRoomObjects(spawnIds);
-    const source = deref(sourceId);
+  const request = {
+    body: [WORK, CARRY, MOVE],
+    name: creepName,
+    opts: { memory: { role: task, target: sourceId, task } }
+  };
 
-    if (!source) {
-      // will probably fail in multiroom due to lack of vision
-      return;
-    }
-
-    const roomHarvesters = harvesters.get(source.pos.roomName);
-    const roomHHaulers = haulers.get(source.pos.roomName);
-
-    for (const spawn of spawns) {
-      if (spawn.spawning) {
-        continue;
-      }
-
-      if (spawn.room.energyAvailable >= workCarryMoveCost) {
-        const creepName = `${task} ${Game.time}`;
-        const result = spawn.spawnCreep([WORK, CARRY, MOVE], creepName, {
-          memory: { role: task, target: sourceId, task }
-        });
-
-        switch (task) {
-          case "harvest":
-            if (roomHarvesters) {
-              const creep = Game.creeps[creepName];
-              roomHarvesters.push(creep.name);
-            }
-            kernel.registerProcess(`${context.processName}:harvest`, harvester, creepName);
-            break;
-          case "haul":
-            if (roomHHaulers) {
-              const creep = Game.creeps[creepName];
-              roomHHaulers.push(creep.name);
-            }
-            kernel.registerProcess(`${context.processName}:haul`, hauler, creepName);
-            break;
-        }
-
-        return;
-      }
-    }
-    yield;
+  switch (task) {
+    case "harvest":
+      requestCreep(request, () => kernel.registerProcess(processName, harvester, creepName));
+      break;
+    case "haul":
+      requestCreep(request, () => kernel.registerProcess(processName, hauler, creepName));
+      break;
   }
+
+  creepList.push(creepName);
 }
 
 function* harvester<T extends any[]>(context: ProcessContext<T>, creepName: string): ProcessGeneratorResult {

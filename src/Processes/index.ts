@@ -3,4 +3,4 @@ import "./SpawnProcess";
 import "./BootstrapProcess";
 import "./UpgraderProcess";
 import "./AutonomousBuilderProcess";
-// import "./HarvesterProcess";
+import "./HarvesterProcess";
