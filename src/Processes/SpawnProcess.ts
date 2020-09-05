@@ -19,7 +19,9 @@ interface ScalingSpawnRequest extends SpawnRequestBase {
   max: number;
 }
 
-const queue = new Map<
+const queue: string[] = [];
+
+const tickets = new Map<
   string,
   { parameters: SpawnRequest | ScalingSpawnRequest; onSuccess: (ticket: string) => void }
 >();
@@ -30,10 +32,19 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
     const energyUsed = new Map<string, number>();
 
     const availableSpawnsThisTick = spawns.filter(spawn => !spawn.spawning);
-    for (const [ticket, request] of queue) {
+    // TODO: could be a while loop where we do queue.shift...
+    for (const ticket of queue) {
       if (!availableSpawnsThisTick.length) {
         // no more spawns, break out and wait for next tick
         break;
+      }
+
+      const request = tickets.get(ticket);
+
+      if (!request) {
+        // context.info(`${ticket} could not be found`);
+        // console.log(`$tickets: ${tickets.size} queue ${queue.length}`);
+        continue;
       }
 
       let body: BodyPartConstant[];
@@ -63,7 +74,10 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
         energyUsed.set(spawn.room.name, roomEnergyUsed + cost);
 
         spawn.spawnCreep(body, name, request.parameters.opts);
-        queue.delete(ticket);
+
+        // Remove ticket
+        tickets.delete(ticket);
+        queue.shift();
 
         // remove spawn during this tick
         availableSpawnsThisTick.splice(i, 1);
@@ -87,10 +101,23 @@ export function requestCreep(request: SpawnRequest | ScalingSpawnRequest, onSucc
   // TODO: support for fulfilling requests from other rooms.
   // TODO: requests should have an objective reference?
 
-  const ticket = new Date().getTime().toString(); // TODO: get a better ticket
+  const ticket = uuidv4();
 
-  queue.set(ticket, { parameters: request, onSuccess });
+  tickets.set(ticket, { parameters: request, onSuccess });
+  queue.push(ticket);
+  console.log(`$tickets: ${tickets.size} queue ${queue.length}`);
 
   // TODO: A ticket should either be a creep name or a ticket, so you can exchange the ticket for a creepName or creepId at a later point in time.
   return ticket;
+}
+
+function uuidv4() {
+  // https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    // eslint-disable-next-line no-bitwise
+    const r = (Math.random() * 16) | 0;
+    // eslint-disable-next-line no-bitwise
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
