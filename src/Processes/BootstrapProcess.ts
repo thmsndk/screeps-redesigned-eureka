@@ -51,21 +51,14 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
     // TODO: finish bootstrapping
     const sources = room.find(FIND_SOURCES);
 
-    let offset = 0;
     for (const source of sources) {
-      const key = (index: string) => `${context.processName}:spawnCreep:${index}`;
-
       // objective, mine source untill death
-      kernel.registerProcess(key(`${source.id}:harvest`), spawnCreep, source.id, source.room.name, "harvest");
-      offset += offsetSpawnRequest();
-      context.info(`Sleeping for ${offset}`);
-      yield* sleep(offset);
+      spawnCreep(source.id, source.room.name, "harvest");
+      yield;
 
       // objective, haul untill death, primarly from source
-      kernel.registerProcess(key(`${source.id}:haul`), spawnCreep, source.id, source.room.name, "haul");
-      offset += offsetSpawnRequest();
-      context.info(`Sleeping for ${offset}`);
-      yield* sleep(offset);
+      spawnCreep(source.id, source.room.name, "haul");
+      yield;
     }
 
     // TODO: do we need to do other things?
@@ -80,12 +73,7 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
   }
 }
 
-function* spawnCreep<T extends any[]>(
-  context: ProcessContext<T>,
-  sourceId: Id<Source>,
-  roomName: string,
-  task: string
-): ProcessGeneratorResult {
+function spawnCreep(sourceId: Id<Source>, roomName: string, task: string): void {
   const creepName = `bootstrap ${Game.time}`;
   requestCreep(
     {
@@ -95,9 +83,7 @@ function* spawnCreep<T extends any[]>(
         memory: { role: `bootstrap:${task}`, target: sourceId, task }
       }
     },
-    ticket => {
-      kernel.registerProcess(`boostrap:${roomName}:${creepName}`, bootstrapCreep, creepName);
-    }
+    () => kernel.registerProcess(`boostrap:${roomName}:${creepName}`, bootstrapCreep, creepName)
   );
 }
 
