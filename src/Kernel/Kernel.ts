@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import { profile } from "lib/profiler";
 import { LogLevel, Logger } from "../Logger";
 
 const log = new Logger("[Kernel]");
@@ -61,6 +62,7 @@ export class ProcessContext<T extends any[]> {
 }
 type ProcessMap<T extends any[]> = Map<string, ProcessContext<T>>;
 
+@profile
 class Kernel<T extends any[]> {
   private threads: Map<any, any>;
   private processes: ProcessMap<T>;
