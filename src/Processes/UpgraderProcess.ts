@@ -6,8 +6,8 @@ import { requestCreep } from "./SpawnProcess";
 kernel.registerProcess("UpgraderProcess", upgraderprocess);
 
 // TODO: this really should be an "objective" :thinking:
-
-const upgraders: Map<string, string[]> = new Map<string, string[]>();
+const requestedUpgraders = new Map<string, string[]>();
+const upgraders = new Map<string, string[]>();
 function* upgraderprocess<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {
   // never ending process
   while (true) {
@@ -19,6 +19,10 @@ function* upgraderprocess<T extends any[]>(context: ProcessContext<T>): ProcessG
 
       if (!upgraders.has(room.name)) {
         upgraders.set(room.name, []);
+      }
+
+      if (!requestedUpgraders.has(room.name)) {
+        requestedUpgraders.set(room.name, []);
       }
 
       const key = `${context.processName}:${room.name}:upgrade`;
@@ -40,39 +44,44 @@ function* upgradeRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
 
     let room = Game.rooms[roomName];
     // TODO: #11 handle amount and size of upgraders at RCL 8
-    const neededUpgraders = room.storage
-      ? Math.ceil(room.storage.store.getUsedCapacity(RESOURCE_ENERGY) / 1000)
-      : Math.floor(room.energyAvailable / 60);
-
+    // const neededUpgraders = room.storage
+    //   ? Math.ceil(room.storage.store.getUsedCapacity(RESOURCE_ENERGY) / 1000)
+    //   : Math.floor(room.energyAvailable / 60);
+    const neededUpgraders = 1; // debugging logistics, we have an issue with our spawning queue
     let roomUpgraders = upgraders.get(roomName);
+    const requestedRoomUpgraders = requestedUpgraders.get(roomName);
 
     // clean up upgraders
     if (roomUpgraders) {
       roomUpgraders = roomUpgraders?.filter(name => Game.creeps[name]);
       upgraders.set(roomName, roomUpgraders);
     }
-
-    if (roomUpgraders && roomUpgraders.length < neededUpgraders) {
+    const totalUpgraders = (roomUpgraders?.length ?? 0) + (requestedRoomUpgraders?.length ?? 0);
+    if (roomUpgraders && requestedRoomUpgraders && totalUpgraders < neededUpgraders) {
       room = Game.rooms[roomName];
       if (!room.controller) {
         return;
       }
 
       // eslint-disable-next-line @typescript-eslint/prefer-for-of
-      for (let i = roomUpgraders.length - 1; i < neededUpgraders; i++) {
+      for (let i = totalUpgraders; i < neededUpgraders; i++) {
         const creepName = `upgrade ${Game.time}`;
 
         // objective, upgrade untill death
-        roomUpgraders.push(creepName);
-
-        requestCreep(
+        const requestedCreepTicket = requestCreep(
           {
             body: [WORK, CARRY, MOVE],
             name: creepName,
             opts: { memory: { role: `upgrade`, target: room.controller.id, task: "upgrade" } }
           },
-          () => kernel.registerProcess(`upgrade:${roomName}:${creepName}`, upgradeController, roomName, creepName)
+          ticket => {
+            requestedRoomUpgraders.splice(requestedRoomUpgraders.indexOf(ticket), 1);
+            roomUpgraders?.push(creepName);
+            kernel.registerProcess(`upgrade:${roomName}:${creepName}`, upgradeController, roomName, creepName);
+          }
         );
+
+        requestedRoomUpgraders.push(requestedCreepTicket);
       }
     }
 
