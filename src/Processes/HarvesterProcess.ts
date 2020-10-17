@@ -2,6 +2,7 @@ import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel
 import { deref, derefRoomObjects } from "utils/Deref";
 import { findDroppedEnergy, harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 import { requestCreep } from "./SpawnProcess";
+import { requestResource } from "./LogisticsProcess";
 
 kernel.registerProcess("HarvesterProcess", harvesterprocess);
 
@@ -30,6 +31,7 @@ function* harvesterprocess<T extends any[]>(context: ProcessContext<T>): Process
 }
 
 function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: string): ProcessGeneratorResult {
+  const sourcePickupRequests = new Map<Id<Source>, string>();
   while (true) {
     const room = Game.rooms[roomName];
     const sources = room.find(FIND_SOURCES);
@@ -40,9 +42,22 @@ function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
     // TODO: #7 scale amount of harvesters based on mining spots and room level
     const neededHarvesters = sources.length;
     // TODO: #8 haulers should be spawned based on some sort of resource "delivery" "request" that runs on repeat.
-    const neededHaulers = sources.length;
+    // const neededHaulers = sources.length;
 
     for (const source of sources) {
+      if (!sourcePickupRequests.get(source.id)) {
+        context.info(`Requesting resource pickup: ${source.id}`);
+        const pickupRequestTicket = requestResource(
+          {
+            resource: RESOURCE_ENERGY,
+            amount: Infinity,
+            pickup: source.id
+          },
+          () => false
+        );
+        sourcePickupRequests.set(source.id, pickupRequestTicket);
+      }
+
       const key = (index: string) => `${context.processName}:${index}`;
 
       if (roomHarvesters && roomHarvesters.length < neededHarvesters) {
@@ -50,10 +65,10 @@ function* harvestRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
         spawnCreep(key(`${source.id}:harvest`), roomHarvesters, "harvest", source.id);
       }
 
-      if (roomHaulers && roomHaulers.length < neededHaulers) {
-        // objective, haul untill death, primarly from source
-        spawnCreep(key(`${source.id}:haul`), roomHaulers, "haul", source.id);
-      }
+      // if (roomHaulers && roomHaulers.length < neededHaulers) {
+      //   // objective, haul untill death, primarly from source
+      //   spawnCreep(key(`${source.id}:haul`), roomHaulers, "haul", source.id);
+      // }
     }
 
     yield;

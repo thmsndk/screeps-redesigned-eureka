@@ -56,9 +56,9 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
       spawnCreep(source.id, source.room.name, "harvest");
       yield;
 
-      // objective, haul untill death, primarly from source
-      spawnCreep(source.id, source.room.name, "haul");
-      yield;
+      // // objective, haul untill death, primarly from source
+      // spawnCreep(source.id, source.room.name, "haul");
+      // yield;
     }
 
     // TODO: do we need to do other things?

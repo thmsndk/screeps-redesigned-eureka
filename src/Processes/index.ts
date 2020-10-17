@@ -2,5 +2,7 @@
 import "./SpawnProcess";
 import "./BootstrapProcess";
 import "./UpgraderProcess";
-import "./AutonomousBuilderProcess";
 import "./HarvesterProcess";
+// import "./AutonomousBuilderProcess";
+import "./LogisticsProcess";
+import "./DummyVisualsProcess";
