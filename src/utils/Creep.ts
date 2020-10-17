@@ -1,4 +1,4 @@
-import { ProcessGeneratorResult } from "Kernel";
+import { ProcessGeneratorResult, YieldAction } from "Kernel";
 import { deref } from "./Deref";
 
 export function* moveToTarget(creepName: string, id: Id<RoomObject> | undefined, range = 1): ProcessGeneratorResult {
@@ -20,7 +20,7 @@ export function* moveToTarget(creepName: string, id: Id<RoomObject> | undefined,
 
     creep.moveTo(target.pos, { range });
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
@@ -35,7 +35,7 @@ export function* harvest(creepName: string, id: Id<RoomObject> | undefined): Pro
     if (source) {
       if (source.energy > 0) {
         creep.harvest(source);
-        yield;
+        yield YieldAction.NEXT_TICK;
       }
     }
   }
@@ -56,7 +56,7 @@ export function* upgradeUntillNoEnergy(creepName: string): ProcessGeneratorResul
       creep.upgradeController(creep.room.controller);
       creep = Game.creeps[creepName];
     }
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
@@ -93,7 +93,7 @@ export function* findDroppedEnergy(creepName: string): ProcessGeneratorResult {
     }
   }
 
-  yield;
+  yield YieldAction.NEXT_TICK;
 }
 
 export function* buildUntillNoEnergy(creepName: string): ProcessGeneratorResult {
@@ -126,9 +126,9 @@ export function* buildUntillNoEnergy(creepName: string): ProcessGeneratorResult 
         }
       }
 
-      yield;
+      yield YieldAction.NEXT_TICK;
     }
   }
 
-  yield;
+  yield YieldAction.NEXT_TICK;
 }

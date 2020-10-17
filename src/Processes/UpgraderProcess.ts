@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
+import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { findDroppedEnergy, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 import { requestCreep } from "./SpawnProcess";
@@ -31,7 +31,7 @@ function* upgraderprocess<T extends any[]>(context: ProcessContext<T>): ProcessG
       }
     }
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
@@ -85,7 +85,7 @@ function* upgradeRoom<T extends any[]>(context: ProcessContext<T>, roomName: str
       }
     }
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
@@ -122,6 +122,6 @@ export function* upgradeController<T extends any[]>(
       yield* upgradeUntillNoEnergy(creepName);
     }
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }

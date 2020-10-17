@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel";
+import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel } from "../Kernel";
 import { uuidv4 } from "utils";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { moveToTarget } from "utils/Creep";
@@ -191,7 +191,7 @@ function* logisticsProcess<T extends any[]>(context: ProcessContext<T>): Process
     // we might need to calculate our current carry capacity vs needed capacity
     // should a request be accompanied by an amount/tick?
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 // a delivery request can specify where it wants it from
@@ -303,7 +303,7 @@ function* haulingProcess<T extends any[]>(
 
         if (creep && resource2) {
           creep.pickup(resource2);
-          yield; // next tick
+          yield YieldAction.NEXT_TICK;
         }
 
         const deliveryLocations = derefRoomObjects(deliveryLocationIds);
@@ -325,13 +325,13 @@ function* haulingProcess<T extends any[]>(
             }
           }
 
-          yield;
+          yield YieldAction.NEXT_TICK;
 
           creep = deref(creepId);
         }
       }
     }
 
-    yield; // next tick
+    yield YieldAction.NEXT_TICK;
   }
 }

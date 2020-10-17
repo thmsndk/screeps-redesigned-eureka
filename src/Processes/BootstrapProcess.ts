@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel, sleep } from "../Kernel";
+import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel, sleep } from "../Kernel";
 import { deref, derefRoomObjects } from "utils/Deref";
 import { findDroppedEnergy, harvest, moveToTarget, upgradeUntillNoEnergy } from "utils/Creep";
 import { requestCreep } from "./SpawnProcess";
@@ -54,7 +54,7 @@ function* bootstrapRoom<T extends any[]>(context: ProcessContext<T>, roomName: s
     for (const source of sources) {
       // objective, mine source untill death
       spawnCreep(source.id, source.room.name, "harvest");
-      yield;
+      yield YieldAction.NEXT_TICK;
 
       // // objective, haul untill death, primarly from source
       // spawnCreep(source.id, source.room.name, "haul");
@@ -127,7 +127,7 @@ function* bootstrapHarvester<T extends any[]>(context: ProcessContext<T>, creepN
 
     yield* harvest(creepName, creep.memory.target);
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
@@ -183,6 +183,6 @@ function* bootstrapHauler<T extends any[]>(context: ProcessContext<T>, creepName
       yield* upgradeUntillNoEnergy(creepName);
     }
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }

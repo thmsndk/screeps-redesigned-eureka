@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel";
+import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel } from "../Kernel";
 import { uuidv4 } from "utils";
 
 kernel.registerProcess("SpawnProcess", spawnProcess);
@@ -84,14 +84,14 @@ function* spawnProcess<T extends any[]>(context: ProcessContext<T>): ProcessGene
         availableSpawnsThisTick.splice(i, 1);
 
         // TODO: #10 spawn a process that triggers on success once it is finished spawning?
-        yield; // wait a single tick, so name exists
+        yield YieldAction.NEXT_TICK; // wait a single tick, so name exists
         request.onSuccess(ticket, name);
 
         break;
       }
     }
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 

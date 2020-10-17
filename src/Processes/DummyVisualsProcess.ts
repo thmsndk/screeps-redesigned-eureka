@@ -1,4 +1,4 @@
-import { ProcessContext, ProcessGeneratorResult, kernel } from "../Kernel";
+import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel } from "../Kernel";
 
 kernel.registerProcess("DummyVisualsProcess", dummyvisualsprocess);
 
@@ -40,6 +40,6 @@ function* dummyvisualsprocess<T extends any[]>(context: ProcessContext<T>): Proc
 
     Game.map.visual.text("Target\n\n💥", new RoomPosition(11, 14, "W2N4"), { color: "#FF0000", fontSize: 10 });
 
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }

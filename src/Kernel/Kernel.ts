@@ -2,8 +2,10 @@
 import { LogLevel, Logger } from "../Logger";
 
 const log = new Logger("[Kernel]");
-
-export type ProcessGeneratorResult = Generator<boolean | undefined>;
+export enum YieldAction {
+  NEXT_TICK
+}
+export type ProcessGeneratorResult = Generator<YieldAction>;
 export type ProcessGenerator<T extends any[]> = (context: ProcessContext<T>, ...args: T) => ProcessGeneratorResult;
 
 export class ProcessContext<T extends any[]> {
@@ -127,7 +129,7 @@ class Thread {}
 export function* sleep(ticks: number): ProcessGeneratorResult {
   const end = Game.time + ticks;
   while (Game.time < end) {
-    yield;
+    yield YieldAction.NEXT_TICK;
   }
 }
 
