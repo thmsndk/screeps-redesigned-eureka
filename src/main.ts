@@ -1,7 +1,11 @@
+import { init } from "./lib/Profiler";
 import { ErrorMapper } from "utils/ErrorMapper";
 import { kernel } from "./Kernel";
 // eslint-disable-next-line sort-imports
 import "Processes";
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+global.Profiler = init();
 
 // When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
 // This utility uses source maps to get the line numbers and file names of the original, TS source code

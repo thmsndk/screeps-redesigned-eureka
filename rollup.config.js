@@ -58,7 +58,8 @@ const configPromise = new Promise((resolvePromise, rejectPromise) => {
       output: {
         file: "dist/main.js",
         format: "cjs",
-        sourcemap: true
+        sourcemap: true,
+        intro: `const __PROFILER_ENABLED__ = ${dest === "sim" ? "false" : "true"};`
       },
 
       plugins: [

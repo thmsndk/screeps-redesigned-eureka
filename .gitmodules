@@ -1,0 +1,3 @@
+[submodule "src/lib/profiler"]
+	path = src/lib/profiler
+	url = https://github.com/thmsndk/screeps-typescript-profiler.git
