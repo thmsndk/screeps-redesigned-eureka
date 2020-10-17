@@ -10,6 +10,11 @@ import { ConfigManager } from "./ConfigManager";
 const dest = process.env.DEST;
 
 const loadSS3Config = async () => {
+  if (!dest) {
+    console.log("no destination, returning empty cfg");
+    return null;
+  }
+
   // SS3 https://github.com/screepers/screepers-standards/blob/master/SS3-Unified_Credentials_File.md
   const configManager = new ConfigManager();
   const ss3 = await configManager.getConfig();
