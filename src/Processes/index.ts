@@ -6,3 +6,4 @@ import "./HarvesterProcess";
 // import "./AutonomousBuilderProcess";
 import "./LogisticsProcess";
 import "./DummyVisualsProcess";
+import "./GrafanaStatsExporterProcess";

@@ -1,6 +1,7 @@
 import { init } from "./lib/Profiler";
 import { ErrorMapper } from "utils/ErrorMapper";
 import { kernel } from "./Kernel";
+import Stats from "utils/Stats";
 // eslint-disable-next-line sort-imports
 import "Processes";
 
@@ -18,7 +19,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
   }
 
   kernel.tick();
-
+  Stats.run();
   // TODO: getting a generator is already running error, need to investigate bootstraphauler
 
   // TODO: #12 global reset detection & code upload detection as a seperate thing from global resets, even though they are technically the same, but we want to render them differnetly in grafana
