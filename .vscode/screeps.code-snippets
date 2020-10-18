@@ -20,14 +20,14 @@
     "scope": "javascript,typescript",
     "prefix": ["pg"],
     "body": [
-      "import { ProcessContext, ProcessGeneratorResult, kernel } from \"../Kernel\";",
+      "import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel } from \"../Kernel\";",
       "",
       "kernel.registerProcess(\"${TM_FILENAME_BASE}\", ${TM_FILENAME_BASE/(.+)/${1:/downcase}/});",
       "",
       "function* ${TM_FILENAME_BASE/(.+)/${1:/downcase}/}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
       "  // never ending process",
       "  while (true) {",
-      "    yield;",
+      "    yield YieldAction.NEXT_TICK;",
       "  }",
       "}"
     ],
@@ -40,7 +40,7 @@
     "body": [
       "function* ${2:name}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
       "  while (true) {",
-      "    yield;",
+      "    yield YieldAction.NEXT_TICK;",
       "  }",
       "}"
     ],
