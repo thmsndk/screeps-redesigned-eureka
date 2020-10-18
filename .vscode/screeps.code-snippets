@@ -22,9 +22,9 @@
     "body": [
       "import { ProcessContext, ProcessGeneratorResult, YieldAction, kernel } from \"../Kernel\";",
       "",
-      "kernel.registerProcess(\"${TM_FILENAME_BASE}\", ${TM_FILENAME_BASE/(.+)/${1:/downcase}/});",
+      "kernel.registerProcess(\"${TM_FILENAME_BASE}\", ${TM_FILENAME_BASE/(.+)/${1:/camelcase}/});",
       "",
-      "function* ${TM_FILENAME_BASE/(.+)/${1:/downcase}/}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
+      "function* ${TM_FILENAME_BASE/(.+)/${1:/camelcase}/}<T extends any[]>(context: ProcessContext<T>): ProcessGeneratorResult {",
       "  // never ending process",
       "  while (true) {",
       "    yield YieldAction.NEXT_TICK;",
