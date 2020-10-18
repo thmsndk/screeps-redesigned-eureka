@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import { profile } from "lib/profiler";
 import { LogLevel, Logger } from "../Logger";
+import Stats from "utils/Stats";
 
 const log = new Logger("[Kernel]");
 export enum YieldAction {
@@ -15,6 +16,7 @@ export class ProcessContext<T extends any[]> {
   private kernel: Kernel<T>;
   public processName: string;
   private fn: ProcessGeneratorResult;
+  private _functionName = "";
 
   public constructor(_kernel: Kernel<T>, processName: string, fn: ProcessGenerator<T>, ...args: T) {
     this.logger = new Logger(`[${processName}]`);
@@ -23,6 +25,13 @@ export class ProcessContext<T extends any[]> {
     // add main thread
     this.fn = fn(this, ...args);
     this.processName = processName;
+    // eslint-disable-next-line no-underscore-dangle
+    this._functionName = fn.name;
+  }
+
+  public get functionName(): string {
+    // eslint-disable-next-line no-underscore-dangle
+    return this._functionName;
   }
 
   public next(val?: boolean): IteratorResult<any, boolean> {
@@ -83,7 +92,8 @@ class Kernel<T extends any[]> {
 
   public registerProcess<T extends any[]>(processName: string, fn: ProcessGenerator<T>, ...args: T) {
     if (!this.processes.has(processName)) {
-      log.info(`Registering ${processName}`);
+      // TODO: could we inject a profiler into the context?
+      log.info(`Registering ${processName} ${fn.name}`);
       // TODO: #6 should `this` be the context of a process? https://www.typescriptlang.org/docs/handbook/functions.html#this
       this.processes.set(processName, new ProcessContext(this, processName, fn, ...args));
     }
@@ -137,8 +147,10 @@ export function* sleep(ticks: number): ProcessGeneratorResult {
 
 function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Generator<string | undefined> {
   const queue = Array.from(processes); // shuffle them?
-  const cpu: { [index: string]: number } = {};
-  const iterations: { [index: string]: number } = {};
+  // const cpu: { [index: string]: number } = {};
+  // const iterations: { [index: string]: number } = {};
+  // TODO: collect theese stats per function name, context.fn.name, just needs to be exposed. then we can Stats.log the object
+  const cpu: { [index: string]: { cpu: number; iterations: number } } = {};
 
   // log.info(`${queue.length} processes`);
   for (const process of queue) {
@@ -154,11 +166,13 @@ function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Genera
       const dur = end - start;
       // log.info(`${processName} used ${dur} cpu`);
 
-      iterations[processName] = cpu[processName] || 0;
-      iterations[processName]++;
+      let processCpu = cpu[context.functionName];
+      if (!processCpu) {
+        processCpu = cpu[context.functionName] = { cpu: 0, iterations: 0 };
+      }
 
-      cpu[processName] = cpu[processName] || 0;
-      cpu[processName] += dur;
+      processCpu.iterations++;
+      processCpu.cpu += dur;
 
       // TODO: #4 more descriptive yield values
       if (!done && value === true) {
@@ -194,6 +208,55 @@ function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Genera
       break;
     }
     yield;
+  }
+
+  // record process cpu stats for grafana
+  Stats.log("cpu.processes", cpu);
+
+  if (Game.time % 100 === 0) {
+    // TODO: log cpu usage to console
+    // const totals = Object.values(cpu).reduce<{ cpu: number, }>()
+    const totalCpu = Object.values(cpu).reduce((result, x) => result + x.cpu, 0);
+    const data = Object.entries(cpu)
+      .map(([functionName, x]) => ({
+        functionName,
+        cpu: x.cpu,
+        iterations: x.iterations,
+        cpuPerIteration: x.cpu / x.iterations
+      }))
+      .sort((lhs, rhs) => rhs.cpuPerIteration - lhs.cpuPerIteration);
+
+    let output = "\n";
+
+    // get function name max length
+    const longestName = _.max(data, d => d.functionName.length).functionName.length + 2;
+
+    // // Header line
+    output += _.padRight("Function", longestName);
+    output += _.padLeft("Tot calls", 12);
+    output += _.padLeft("CPU/call", 12);
+    // output += _.padLeft("Tot Calls", 12);
+    // output += _.padLeft("CPU/Call", 12);
+    // output += _.padLeft("Calls/Tick", 12);
+    // output += _.padLeft("CPU/Tick", 12);
+    output += _.padLeft("% of Tot\n", 12);
+
+    // //  Data lines
+    data.forEach(d => {
+      output += _.padRight(`${d.functionName}`, longestName);
+      output += _.padLeft(`${d.iterations}`, 12);
+      output += _.padLeft(`${d.cpuPerIteration.toFixed(2)}ms`, 12);
+      // output += _.padLeft(`${d.calls}`, 12);
+      // output += _.padLeft(`${d.cpuPerCall.toFixed(2)}ms`, 12);
+      // output += _.padLeft(`${d.callsPerTick.toFixed(2)}`, 12);
+      // output += _.padLeft(`${d.cpuPerTick.toFixed(2)}ms`, 12);
+      output += _.padLeft(`${((d.cpuPerIteration / totalCpu) * 100).toFixed(0)} %\n`, 12);
+    });
+
+    // // Footer line
+    // output += `${totalTicks} total ticks measured`;
+    output += `\t\t\t${totalCpu.toFixed(2)} total CPU`;
+    log.info(output);
   }
 }
 
