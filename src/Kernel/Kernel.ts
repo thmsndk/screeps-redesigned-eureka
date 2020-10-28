@@ -2,6 +2,7 @@
 import { profile } from "lib/profiler";
 import { LogLevel, Logger } from "../Logger";
 import Stats from "utils/Stats";
+import { exponentialMovingAverage } from "utils";
 
 const log = new Logger("[Kernel]");
 export enum YieldAction {
@@ -211,13 +212,21 @@ function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Genera
   }
 
   // record process cpu stats for grafana
-  Stats.log("cpu.processes", cpu);
+  // TODO: gotta loop the cpu object and convert it to EMA with a window before caching it.
+  // moving average disabled, cpu usage is very different each tick, and unless the process uses cpu all the time, we forget what they used each tick when we override
+  Object.entries(cpu).forEach(([functionName, x]) => {
+    // TODO: how do we mark functions this tick with 0 used cpu, if they where not used?
+    const processStats = Stats.cpu?.processes ? Stats.cpu?.processes[functionName] : null;
+    Stats.cache(`cpu.processes.${functionName}.cpu`, exponentialMovingAverage(x.cpu, processStats?.cpu ?? 0, 10));
+    Stats.cache(
+      `cpu.processes.${functionName}.iterations`,
+      exponentialMovingAverage(x.iterations, processStats?.iterations ?? 0, 10)
+    );
+  });
 
   if (Game.time % 100 === 0) {
-    // TODO: log cpu usage to console
-    // const totals = Object.values(cpu).reduce<{ cpu: number, }>()
-    const totalCpu = Object.values(cpu).reduce((result, x) => result + x.cpu, 0);
-    const data = Object.entries(cpu)
+    const totalCpu = Object.values(Stats.cpu.processes).reduce((result, x) => result + x.cpu, 0);
+    const data = Object.entries(Stats.cpu.processes)
       .map(([functionName, x]) => ({
         functionName,
         cpu: x.cpu,
@@ -244,7 +253,7 @@ function* loop<T extends any[]>(processes: ProcessMap<T>, limit: number): Genera
     // //  Data lines
     data.forEach(d => {
       output += _.padRight(`${d.functionName}`, longestName);
-      output += _.padLeft(`${d.iterations}`, 12);
+      output += _.padLeft(`${d.iterations.toFixed(2)}`, 12);
       output += _.padLeft(`${d.cpuPerIteration.toFixed(2)}ms`, 12);
       // output += _.padLeft(`${d.calls}`, 12);
       // output += _.padLeft(`${d.cpuPerCall.toFixed(2)}ms`, 12);
