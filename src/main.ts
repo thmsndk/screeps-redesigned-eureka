@@ -4,6 +4,10 @@ import { kernel } from "./Kernel";
 import Stats from "utils/Stats";
 // eslint-disable-next-line sort-imports
 import "Processes";
+import { Logger } from "Logger";
+import globalTracking from "utils/GlobalTracking";
+
+globalTracking.run();
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 global.Profiler = init();

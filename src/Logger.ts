@@ -8,6 +8,13 @@ export enum LogLevel {
   ERROR = "error"
 }
 
+const LogLevelStyle = {
+  [LogLevel.DEBUG]: "color: #008FAF",
+  [LogLevel.INFO]: "color: white",
+  [LogLevel.WARNING]: "color: orange",
+  [LogLevel.CRITICAL]: "color: yellow; background-color: red",
+  [LogLevel.ERROR]: "color: red"
+};
 export class Logger {
   private prefix: string;
   public constructor(prefix: string) {
@@ -30,9 +37,13 @@ export class Logger {
     this.log(LogLevel.CRITICAL, message);
   }
   public error(error: string | Error): void {
-    this.log(LogLevel.ERROR, `<span style='color:red'>${_.escape(ErrorMapper.sourceMappedStackTrace(error))}</span>`);
+    this.log(LogLevel.ERROR, `${_.escape(ErrorMapper.sourceMappedStackTrace(error))}`);
   }
   public log(logLevel: LogLevel, message: string): void {
-    console.log(`[${Game.time}] [${logLevel}] ${this.prefix} ${message}`);
+    console.log(
+      `<span style='${LogLevelStyle[logLevel]}'>[${Game.time}] [${logLevel}] ${this.prefix} ${message}</span>`
+    );
   }
 }
+
+export const log = new Logger("[Global]");

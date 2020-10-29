@@ -6,6 +6,7 @@ import commonjs from "@rollup/plugin-commonjs";
 import typescript from "rollup-plugin-typescript2";
 import screeps from "rollup-plugin-screeps";
 import { ConfigManager } from "./ConfigManager";
+import replace from "rollup-plugin-replace";
 
 const dest = process.env.DEST;
 
@@ -63,6 +64,14 @@ const configPromise = new Promise((resolvePromise, rejectPromise) => {
       },
 
       plugins: [
+        replace({
+          // returns 'true' if code is bundled in prod mode
+          // PRODUCTION: JSON.stringify(isProduction),
+          // you can also use this to include deploy-related data, such as
+          // date + time of build, as well as latest commit ID from git
+          __BUILD_TIME__: Date.now(),
+          __REVISION__: require("git-rev-sync").short()
+        }),
         clear({ targets: ["dist"] }),
         resolve(),
         commonjs(),
